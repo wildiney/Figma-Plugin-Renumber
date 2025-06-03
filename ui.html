@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <body>
+    <button id="run">Renumerar Etapas</button>
+
+    <script>
+      document.getElementById('run').onclick = () => {
+        parent.postMessage({ pluginMessage: { type: 'renumerar' } }, '*')
+      }
+    </script>
+  </body>
+</html>
