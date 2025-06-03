@@ -1,11 +1,116 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .content {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+    .btn {
+      border-radius: 0.5rem;
+      border: 1px solid gray;
+      padding: 0.5rem 1rem;
+    }
+    .filMaxWidth {
+      width: 100%;
+    }
+    .form-group {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+    label {
+      font-weight: 600;
+    }
+    input[type='text'] {
+      width: 100%;
+      padding: 0.25rem 0.5rem;
+    }
+    input[type='text']::placeholder {
+      color: lightgray;
+    }
+    .spacer-4 {
+      height: 1rem;
+    }
+  </style>
   <body>
-    <button id="run">Renumerar Etapas</button>
+    <div class="content">
+      <div class="form-group">
+        <label for="instance_name">Instance name</label>
+        <input
+          type="text"
+          name="instance_name"
+          id="instance_name"
+          placeholder="My-Instance-Name"
+          autocomplete="on"
+        />
+      </div>
+      <div class="form-group">
+        <label for="text_field">Text field name</label>
+        <input
+          type="text"
+          name="text_field"
+          id="text_field"
+          placeholder="My-TextField-Name"
+          autocomplete="on"
+        />
+      </div>
+      <div class="spacer-4"></div>
+      <button class="btn filMaxWidth" id="run">Renumber Instances</button>
+    </div>
 
     <script>
+      const instanceNameField = document.getElementById('instance_name')
+      instanceNameField.addEventListener('change', () => {
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: 'instanceName',
+              value: instanceNameField.value,
+            },
+          },
+          '*'
+        )
+      })
+
+      const textField = document.getElementById('text_field')
+      textField.addEventListener('change', () => {
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: 'textField',
+              value: textField.value,
+            },
+          },
+          '*'
+        )
+      })
+
       document.getElementById('run').onclick = () => {
-        parent.postMessage({ pluginMessage: { type: 'renumerar' } }, '*')
+        if (textField.value == '' || instanceNameField.value == '') {
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: 'error',
+                value: 'The fields must be filled',
+              },
+            },
+            '*'
+          )
+        }
+        parent.postMessage({ pluginMessage: { type: 'renumber' } }, '*')
       }
     </script>
   </body>

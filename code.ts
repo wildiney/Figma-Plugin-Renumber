@@ -1,33 +1,52 @@
-figma.showUI(__html__, { width: 200, height: 100 });
+const DEBUG = false
+let INSTANCE_NAME = "Teste"
+let TEXT_FIELD = "Teste"
+figma.showUI(__html__, { width: 250, height: 250 });
+
 
 figma.ui.onmessage = async (msg) => {
-  if (msg.type === "renumerar") {
+  if (msg.type === "error") {
+    const error = msg.value
+    figma.notify(error)
+  }
+  if (msg.type === "instanceName") {
+    INSTANCE_NAME = msg.value
+    console.log(msg.value)
+  }
+  if (msg.type === "textField") {
+    TEXT_FIELD = msg.value
+    console.log(msg.value)
+  }
+
+  if (msg.type === "renumber") {
     const selection = figma.currentPage.selection;
 
     if (selection.length === 0) {
-      figma.notify("Selecione uma ou mais instâncias do componente Etapa.");
+      figma.notify(`Select one or more instances of ${INSTANCE_NAME}`);
       return;
     }
 
-    // Filtra as instâncias do componente chamado "Etapa"
-    const etapas: InstanceNode[] = [];
+    const instances: InstanceNode[] = [];
 
     for (const node of selection) {
       if (node.type === "INSTANCE") {
         const mainComponent = await node.getMainComponentAsync();
-        if (mainComponent?.name === "Etapa") {
-          etapas.push(node);
+        if (mainComponent) {
+          const componentSet = mainComponent.parent
+          if (DEBUG) console.log(componentSet?.name)
+          if (componentSet?.name === INSTANCE_NAME) {
+            instances.push(node);
+          }
         }
       }
     }
 
-    if (etapas.length === 0) {
-      figma.notify("Nenhuma instância válida de 'Etapa' encontrada.");
+    if (instances.length === 0) {
+      figma.notify(`No instance of ${INSTANCE_NAME} found.`);
       return;
     }
 
-    // Ordena pela ordem visual no painel de camadas
-    const ordered = etapas.sort((a, b) => {
+    const ordered = instances.sort((a, b) => {
       const aIndex = a.parent?.children.indexOf(a) ?? -1;
       const bIndex = b.parent?.children.indexOf(b) ?? -1;
       return aIndex - bIndex;
@@ -36,14 +55,16 @@ figma.ui.onmessage = async (msg) => {
     for (let idx = 0; idx < ordered.length; idx++) {
       const instance = ordered[idx];
 
-      const textNode = instance.findOne(n =>
-        n.type === "TEXT" && n.name === "Text"
+      const textNode = instance.findOne(n => {
+        if (DEBUG) console.log(n.name)
+        return n.type === "TEXT" && n.name === TEXT_FIELD
+      }
       );
 
       if (textNode && textNode.type === "TEXT") {
         const font = textNode.fontName;
         if (font === figma.mixed) {
-          await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+          await figma.loadFontAsync({ family: "Roboto Slab", style: "Regular" });
         } else {
           await figma.loadFontAsync(font);
         }
@@ -52,6 +73,6 @@ figma.ui.onmessage = async (msg) => {
       }
     }
 
-    figma.notify("Instâncias renumeradas!");
+    figma.notify("Instances Renamed");
   }
 };
