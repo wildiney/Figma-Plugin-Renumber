@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Renumber Plugin</title>
     <style>
       :root {
@@ -12,9 +12,7 @@
         --font-weight-default: 450;
 
         --text-body-medium-letter-spacing: 0.00344rem;
-
         --text-body-medium-line-height: 1rem;
-
         --text-body-medium-font-family: var(--font-family-default);
         --text-body-medium-font-size: 0.6875rem;
         --text-body-medium-font-weight: var(--font-weight-default);
@@ -44,11 +42,9 @@
         align-items: center;
         padding: 1rem;
       }
-
       .spacer-4 {
         height: 1rem;
       }
-
       .form-group {
         width: 100%;
         margin-bottom: 1.5rem;
@@ -62,13 +58,11 @@
         flex-direction: column;
         gap: 0.5rem;
       }
-
       h2 {
         font-family: var(--font-family-default);
         font-size: 1.25rem;
-        line-height: auto;
+        line-height: normal;
       }
-
       button {
         width: 100%;
         height: var(--btn-height);
@@ -77,24 +71,21 @@
         font-weight: 400;
         color: var(--figma-color-text);
         text-align: center;
-        line-height: auto;
-        background-color: var(--figma-color-bg);
-        display: block;
-        padding: 0.25rem 0.5rem;
         background-color: transparent;
-        box-sizing: border-box;
         border: 1px solid #d4d4d4;
         border-radius: 3px;
         outline: none;
         cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        box-sizing: border-box;
+        display: block;
       }
-
       label {
         font-size: var(--text-body-medium-font-size);
         font-weight: 600;
       }
-
-      input[type='text'] {
+      input[type='text'],
+      input[type='number'] {
         font-family: var(--text-body-medium-font-family);
         font-size: var(--text-body-medium-font-size);
         font-weight: var(--text-body-medium-font-weight);
@@ -111,128 +102,153 @@
         border: 1px solid transparent;
         border-radius: 3px;
       }
-
-      input[type='text']:focus {
+      input[type='text']:focus,
+      input[type='number']:focus {
         border-color: #30c2ff;
         box-shadow: inset 0 0 0 1px #30c2ff;
         outline: none;
-      }
-
-      input[type='checkbox'] {
-        width: 14px;
-        height: 14px;
-        border: 1px solid #d4d4d4;
-        border-radius: 3px;
-        box-sizing: border-box;
-        background-color: #fff;
       }
     </style>
   </head>
   <body>
     <div class="content">
-      <h2>Config</h2>
+      <h2>Configuration</h2>
       <div class="form-group">
-        <label for="instance_name">Instance name</label>
+        <label for="instanceNameInput">Instance Name</label>
         <input
           type="text"
-          name="instance_name"
-          id="instance_name"
+          id="instanceNameInput"
           placeholder="My-Instance-Name"
           autocomplete="on"
         />
       </div>
       <div class="form-group">
-        <label for="text_field">Text field name</label>
+        <label for="textFieldNameInput">Text Field Name</label>
         <input
           type="text"
-          name="text_field"
-          id="text_field"
+          id="textFieldNameInput"
           placeholder="My-TextField-Name"
           autocomplete="on"
         />
       </div>
+      <div class="form-group">
+        <label for="startIndexInput">Start From</label>
+        <input
+          type="number"
+          id="startIndexInput"
+          placeholder="0"
+          autocomplete="on"
+          value="1"
+        />
+      </div>
+
       <div class="spacer-4"></div>
+
       <h2>Actions</h2>
       <div class="button-group">
-        <button class="btn fillMaxWidth" id="select_instances">
-          Select Instances
-        </button>
-        <button class="btn fillMaxWidth" id="run">Renumber Instances</button>
+        <button id="btnSelectInstances">Select Instances</button>
+        <button id="btnRenumberInstances">Renumber Instances</button>
       </div>
     </div>
 
     <script>
-      const instanceNameField = document.getElementById('instance_name')
-      const textField = document.getElementById('text_field')
-      const selectInstancesOf = document.getElementById('select_instances')
+      const instanceNameInput = document.getElementById('instanceNameInput')
+      const textFieldNameInput = document.getElementById('textFieldNameInput')
+      const startIndexInput = document.getElementById('startIndexInput')
+      const btnSelectInstances = document.getElementById('btnSelectInstances')
+      const btnRenumberInstances = document.getElementById(
+        'btnRenumberInstances'
+      )
 
+      // Load saved data on UI load
       window.onload = () => {
         parent.postMessage({ pluginMessage: { type: 'loadData' } }, '*')
       }
 
+      // Listen to messages from plugin code.ts
       window.onmessage = (event) => {
         const msg = event.data.pluginMessage
         if (!msg) return
 
-        if (msg.type === 'loadedData') {
-          const savedData = msg.data || {}
-          if (savedData.instanceName) {
-            instanceNameField.value = savedData.instanceName
-          }
-          if (savedData.textField) {
-            textField.value = savedData.textField
-          }
-        } else if (msg.type === 'error') {
-          alert(msg.value)
+        switch (msg.type) {
+          case 'loadedData':
+            const data = msg.data || {}
+            if (data.instanceName) instanceNameInput.value = data.instanceName
+            if (data.textFieldName)
+              textFieldNameInput.value = data.textFieldName
+            if (data.startIndex !== undefined)
+              startIndexInput.value = data.startIndex
+            break
+
+          case 'error':
+            alert(msg.value)
+            break
         }
       }
 
+      // Save data and notify plugin on input changes
       function saveData() {
         const data = {
-          instanceName: instanceNameField.value,
-          textField: textField.value,
+          instanceName: instanceNameInput.value.trim(),
+          textFieldName: textFieldNameInput.value.trim(),
+          startIndex: Number(startIndexInput.value) || 0,
         }
+
         parent.postMessage({ pluginMessage: { type: 'saveData', data } }, '*')
-
-        parent.postMessage(
-          { pluginMessage: { type: 'instanceName', value: data.instanceName } },
-          '*'
-        )
-        parent.postMessage(
-          { pluginMessage: { type: 'textField', value: data.textField } },
-          '*'
-        )
-      }
-
-      instanceNameField.addEventListener('change', saveData)
-      textField.addEventListener('change', saveData)
-
-      selectInstancesOf.addEventListener('click', () => {
         parent.postMessage(
           {
             pluginMessage: {
-              type: 'selectInstances',
+              type: 'setInstanceName',
+              value: data.instanceName,
             },
           },
           '*'
         )
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: 'setTextFieldName',
+              value: data.textFieldName,
+            },
+          },
+          '*'
+        )
+        parent.postMessage(
+          { pluginMessage: { type: 'setStartIndex', value: data.startIndex } },
+          '*'
+        )
+      }
+
+      instanceNameInput.addEventListener('change', saveData)
+      textFieldNameInput.addEventListener('change', saveData)
+      startIndexInput.addEventListener('change', saveData)
+
+      // Button event listeners
+      btnSelectInstances.addEventListener('click', () => {
+        parent.postMessage({ pluginMessage: { type: 'selectInstances' } }, '*')
       })
 
-      document.getElementById('run').onclick = () => {
-        if (!instanceNameField.value.trim() || !textField.value.trim()) {
+      btnRenumberInstances.addEventListener('click', () => {
+        if (
+          !instanceNameInput.value.trim() ||
+          !textFieldNameInput.value.trim()
+        ) {
           parent.postMessage(
             {
               pluginMessage: {
                 type: 'error',
-                value: 'The fields must be filled',
+                value: 'Please fill out Instance Name and Text Field Name.',
               },
             },
             '*'
           )
           return
         }
-        parent.postMessage({ pluginMessage: { type: 'renumber' } }, '*')
-      }
+        parent.postMessage(
+          { pluginMessage: { type: 'renumberInstances' } },
+          '*'
+        )
+      })
     </script>
   </body>
 </html>
